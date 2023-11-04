@@ -1,3 +1,4 @@
+# main_app.py code:
 
 import tkinter as tk
 from database_handling import FinalDatabase

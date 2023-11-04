@@ -1,3 +1,4 @@
+# database_handling.py code:
 
 import sqlite3
 

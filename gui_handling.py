@@ -11,16 +11,34 @@ class FinalAiRefinementGui:
         self.iteration_count = 0
         self.ai = AIIntegration()
         self.score = 0
-        
-        # GUI elements
+        self.item_scores = {}  # Dictionary to store scores for individual items
+
+       # GUI elements
         self.score_label = tk.Label(self.root, text=f"Score: {self.score}")
         self.score_label.pack(pady=10)
+        
+        # Introducing the scrolling list for item scores
+        self.item_scores_label = tk.Label(self.root, text="Item Scores:")
+        self.item_scores_label.pack(pady=10)
+        
+        self.item_scores_listbox = tk.Listbox(self.root, height=10, width=50)
+        self.item_scores_listbox.pack(pady=10)
+        self.scrollbar = tk.Scrollbar(self.root, command=self.item_scores_listbox.yview)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.item_scores_listbox.config(yscrollcommand=self.scrollbar.set)
         
         self.prompt_entry_label = tk.Label(self.root, text="Enter Original Prompt:")
         self.prompt_entry_label.pack(pady=10)
         
         self.prompt_entry = tk.Entry(self.root, width=100)
         self.prompt_entry.pack(pady=10)
+        
+        # Additional item entry
+        self.additional_item_label = tk.Label(self.root, text="Add Additional Item:")
+        self.additional_item_label.pack(pady=10)
+
+        self.additional_item_entry = tk.Entry(self.root, width=100)
+        self.additional_item_entry.pack(pady=10)
         
         self.generate_button = tk.Button(self.root, text="Generate Enhanced Prompts", command=self.add_prompt)
         self.generate_button.pack(pady=20)
@@ -55,15 +73,50 @@ class FinalAiRefinementGui:
         self.prompt_display_1.config(text=gen_prompt_1)
         self.prompt_display_2.config(text=gen_prompt_2)
         
+    def update_item_scores(self, prompt, score_change):
+        """Updates the scores of individual items in the given prompt."""
+        items = prompt.split(', ')
+        for item in items:
+            self.item_scores[item] = self.item_scores.get(item, 0) + score_change
+        self.update_item_scores_display()
+            
+    def update_item_scores_display(self):
+        """Updates the listbox to display the most recent scores."""
+        self.item_scores_listbox.delete(0, tk.END)  # Clear the listbox
+        sorted_scores = sorted(self.item_scores.items(), key=lambda x: x[1], reverse=True)
+        for item, score in sorted_scores:
+            self.item_scores_listbox.insert(tk.END, f"{item}: {score}")
+            
     def select_prompt_1(self):
         self.selected_prompt = self.prompt_display_1.cget("text")
+        additional_item = self.additional_item_entry.get().strip()
+        if additional_item:
+            self.selected_prompt += ', ' + additional_item
+            self.additional_item_entry.delete(0, tk.END)
+        self.update_item_scores(self.selected_prompt, 1)
         self.store_feedback_and_proceed("Preferred", 1)
         
     def select_prompt_2(self):
         self.selected_prompt = self.prompt_display_2.cget("text")
+        additional_item = self.additional_item_entry.get().strip()
+        if additional_item:
+            self.selected_prompt += ', ' + additional_item
+            self.additional_item_entry.delete(0, tk.END)
+        self.update_item_scores(self.selected_prompt, 1)
         self.store_feedback_and_proceed("Preferred", 1)
 
     def love_both(self):
+        prompt_1 = self.prompt_display_1.cget("text")
+        prompt_2 = self.prompt_display_2.cget("text")
+        additional_item = self.additional_item_entry.get().strip()
+        if additional_item:
+            prompt_1 += ', ' + additional_item
+            prompt_2 += ', ' + additional_item
+            self.prompt_display_1.config(text=prompt_1)
+            self.prompt_display_2.config(text=prompt_2)
+            self.additional_item_entry.delete(0, tk.END)
+        self.update_item_scores(prompt_1, 1)
+        self.update_item_scores(prompt_2, 1)
         self.score += 3
         self.update_score_display()
         self.database.store_feedback(self.iteration_count, "Loved Both", "")
@@ -71,6 +124,17 @@ class FinalAiRefinementGui:
         self.add_prompt()
 
     def dislike_both(self):
+        prompt_1 = self.prompt_display_1.cget("text")
+        prompt_2 = self.prompt_display_2.cget("text")
+        additional_item = self.additional_item_entry.get().strip()
+        if additional_item:
+            prompt_1 += ', ' + additional_item
+            prompt_2 += ', ' + additional_item
+            self.prompt_display_1.config(text=prompt_1)
+            self.prompt_display_2.config(text=prompt_2)
+            self.additional_item_entry.delete(0, tk.END)
+        self.update_item_scores(prompt_1, -1)
+        self.update_item_scores(prompt_2, -1)
         self.score -= 1
         self.update_score_display()
         self.database.store_feedback(self.iteration_count, "Disliked Both", "")
